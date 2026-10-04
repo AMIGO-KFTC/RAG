@@ -35,7 +35,7 @@ class ParsedDocument:
     source_type: str
     blocks: list[Block] = field(default_factory=list)
     metadata: dict[str, Any] = field(default_factory=dict)
-    attachments: list["ParsedDocument"] = field(default_factory=list)
+    attachments: list[ParsedDocument] = field(default_factory=list)
     warnings: list[str] = field(default_factory=list)
 
     @property

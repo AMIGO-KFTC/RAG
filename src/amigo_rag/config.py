@@ -57,7 +57,7 @@ class RAGSettings:
         return None if self.data_dir is None else Path(self.data_dir) / "chroma"
 
     @classmethod
-    def in_memory(cls, **overrides) -> "RAGSettings":
+    def in_memory(cls, **overrides) -> RAGSettings:
         """디스크에 저장하지 않는 설정(테스트, 일회성 실행)."""
         settings = cls(**overrides)
         settings.data_dir = None

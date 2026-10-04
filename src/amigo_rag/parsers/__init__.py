@@ -6,7 +6,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Callable
+from collections.abc import Callable
 
 from ..models import ParsedDocument, ParseError
 from .archive import parse_zip
