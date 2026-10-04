@@ -14,7 +14,7 @@ import statistics
 from pathlib import Path
 
 from ..models import Block, ParsedDocument, ParseError
-from ..textutil import clean_text, looks_garbled, table_to_markdown
+from ..textutil import clean_text, join_wrapped_cell, looks_garbled, table_to_markdown
 
 
 class _PdfiumPage:
@@ -182,11 +182,10 @@ def _page_blocks(page, page_no: int, reader: _PdfiumPage | None) -> list[Block]:
 def _table_markdown(table, reader: _PdfiumPage | None) -> str:
     try:
         if reader is None:
-            return table_to_markdown(table.extract())
-        rows = []
-        for row in table.rows:
-            rows.append([reader.bounded(*bbox) if bbox else None for bbox in row.cells])
-        return table_to_markdown(rows)
+            rows = table.extract()
+        else:
+            rows = [[reader.bounded(*bbox) if bbox else None for bbox in row.cells] for row in table.rows]
+        return table_to_markdown([[join_wrapped_cell(cell) for cell in row] for row in rows])
     except Exception:
         return ""
 

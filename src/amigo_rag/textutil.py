@@ -87,3 +87,23 @@ def heading_level_from_style(style_name: str | None) -> int:
     if match:
         return max(1, min(int(match.group(2)), 6))
     return 0
+
+
+_SHORT_TAIL = re.compile(r"[가-힣]{1,2}[.,)]?")
+
+
+def join_wrapped_cell(text: str | None) -> str | None:
+    """좁은 표 칸에서 줄바꿈으로 잘린 단어를 잇는다('홈페이지 콘텐츠 관\n리' → '… 관리').
+
+    다음 줄이 한글 1~2음절뿐이면 앞 단어의 꼬리로 보고 공백 없이 붙이고, 그 밖에는 공백으로 잇는다.
+    """
+    if text is None:
+        return None
+    lines = [ln.strip() for ln in text.replace("\r\n", "\n").replace("\r", "\n").split("\n") if ln.strip()]
+    out = ""
+    for line in lines:
+        if out and re.match(r"[가-힣]", out[-1]) and _SHORT_TAIL.fullmatch(line):
+            out += line
+        else:
+            out = f"{out} {line}" if out else line
+    return out

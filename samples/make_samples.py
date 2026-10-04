@@ -29,7 +29,7 @@ def make_pdf(path: Path) -> Path:
     from reportlab.lib.styles import ParagraphStyle
     from reportlab.pdfbase import pdfmetrics
     from reportlab.pdfbase.cidfonts import UnicodeCIDFont
-    from reportlab.platypus import PageBreak, Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
+    from reportlab.platypus import PageBreak, Paragraph, SimpleDocTemplate, Table, TableStyle
 
     pdfmetrics.registerFont(UnicodeCIDFont("HYGothic-Medium"))
     body = ParagraphStyle("body", fontName="HYGothic-Medium", fontSize=10.5, leading=16, wordWrap="CJK")
