@@ -358,10 +358,12 @@ python -m amigo_rag chunks samples/홈페이지_운영매뉴얼.hwpx     # 청�
 python -m amigo_rag ingest demo samples/*.pdf samples/*.hwpx samples/*.docx samples/*.eml samples/*.xlsx samples/*.pptx
 python -m amigo_rag search demo "CMS 권한 신청 방법" -k 3       # 검색(score = 벡터 유사도와 키워드 일치율의 평균)
 python -m amigo_rag sources demo                                 # 'demo' 지식베이스에 적재된 자료
-python samples/make_samples.py                                   # 샘플 자료 6종 다시 만들기
+python samples/make_samples.py data/samples                      # 샘플 자료 6종을 data/samples 에 새로 만들기
 ```
 
 - 지식베이스는 `./data/rag/chroma` 에 저장됩니다(`AMIGO_RAG_DATA_DIR` 로 변경, `data/` 는 git 에서 제외).
+- `samples/` 의 파일은 저장소에 들어 있으므로 다시 만들 필요가 없습니다. 생성기를 고쳤다면 위처럼 다른 폴더에 만들어 확인한 뒤 옮기세요
+  (그 자리에서 다시 만들면 날짜 정보 때문에 6개 파일이 모두 바뀐 것으로 나옵니다).
 - Windows PowerShell 은 `samples/*.pdf` 같은 와일드카드를 펼쳐 주지 않지만 `ingest` 가 직접 펼치므로 같은 명령을 그대로 쓰면 됩니다.
 - 링크도 적재할 수 있습니다: `python -m amigo_rag ingest demo "https://wiki.example.com/pages/viewpage.action?pageId=123"`
 
