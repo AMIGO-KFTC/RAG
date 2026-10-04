@@ -10,6 +10,7 @@
 from __future__ import annotations
 
 import argparse
+import glob
 import json
 import sys
 
@@ -18,6 +19,18 @@ from .config import RAGSettings
 from .kb import KnowledgeBase
 from .models import ParseError
 from .parsers import parse_file
+
+
+def expand_paths(items: list[str]) -> list[str]:
+    """samples/*.pdf 같은 와일드카드를 직접 펼친다(Windows PowerShell 은 셸이 펼쳐 주지 않는다)."""
+    out: list[str] = []
+    for item in items:
+        if not item.startswith(("http://", "https://")) and any(ch in item for ch in "*?["):
+            matches = sorted(glob.glob(item))
+            out.extend(matches or [item])
+        else:
+            out.append(item)
+    return out
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -62,7 +75,7 @@ def main(argv: list[str] | None = None) -> int:
                 print(chunk.text)
         elif args.command == "ingest":
             kb = KnowledgeBase(args.kb_id, settings=settings)
-            for item in args.items:
+            for item in expand_paths(args.items):
                 try:
                     result = kb.add_url(item) if item.startswith(("http://", "https://")) else kb.add_file(item)
                     print(f"✔ {result.source_name}: 청크 {result.chunk_count}개 (source_id={result.source_id})")

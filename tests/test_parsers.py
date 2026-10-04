@@ -124,7 +124,8 @@ class _CP949Info(zipfile.ZipInfo):
     """한국어 윈도우 압축 프로그램처럼 파일명을 CP949 로 기록(UTF-8 플래그 없음)."""
 
     def _encodeFilenameFlags(self):
-        return self.filename.encode("cp949"), self.flag_bits
+        # Python 3.13 부터 쓰기 기본값에 UTF-8 플래그(0x800)가 켜져 있으므로 직접 끈다.
+        return self.filename.encode("cp949"), self.flag_bits & ~0x800
 
 
 def test_zip_with_code_and_cp949_names(tmp_path: Path):
