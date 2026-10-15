@@ -68,6 +68,10 @@ class SearchResult:
     metadata: dict[str, Any]
     vector_score: float | None = None
     keyword_score: float | None = None
+    # 질문의 핵심 단어가 이 조각에 얼마나 들어 있는지(0~1)와, 그것이 설정 기준(min_relevance) 이상인지.
+    # score 는 '순위용 참고 수치'이고, 자료에 답이 있는지는 이 값으로 판단한다.
+    relevance: float | None = None
+    relevant: bool | None = None
 
     @property
     def source_id(self) -> str:
