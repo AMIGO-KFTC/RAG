@@ -35,6 +35,18 @@ def _env_list(name: str) -> list[str]:
     return [v.strip().lower() for v in value.split(",") if v.strip()]
 
 
+DEFAULT_SYNONYMS_PATH = Path(__file__).parent / "resources" / "synonyms.json"
+
+
+def _synonyms_path() -> Path | None:
+    """AMIGO_RAG_SYNONYMS: 미설정=기본 사전, 경로=그 사전, 빈 값/off/none=사용 안 함."""
+    value = os.getenv("AMIGO_RAG_SYNONYMS")
+    if value is None:
+        return DEFAULT_SYNONYMS_PATH
+    value = value.strip()
+    return None if value.lower() in {"", "off", "none", "false", "0"} else Path(value)
+
+
 @dataclass
 class RAGSettings:
     # ChromaDB 저장 위치. None 이면 메모리에만 저장(테스트용).
@@ -46,8 +58,8 @@ class RAGSettings:
     max_file_mb: int = field(default_factory=lambda: _env_int("AMIGO_RAG_MAX_FILE_MB", 50))
     # 검색 결과를 '질문과 관련 있음'으로 보는 기준(0~1). search(only_relevant=True) 가 이 값 미만인 결과를 뺀다.
     min_relevance: float = field(default_factory=lambda: _env_float("AMIGO_RAG_MIN_RELEVANCE", 0.4))
-    # 동의어 사전 JSON 파일 경로. 비워 두면 동의어를 쓰지 않는다(기본).
-    synonyms_path: Path | None = field(default_factory=lambda: Path(v) if (v := os.getenv("AMIGO_RAG_SYNONYMS", "")) else None)
+    # 동의어 사전 JSON 파일 경로. 지정하지 않으면 패키지에 들어 있는 기본 사전을 쓴다. 빈 값 또는 off 이면 쓰지 않는다.
+    synonyms_path: Path | None = field(default_factory=lambda: _synonyms_path())
 
     # 링크 수집 (컨플루언스 / 나누미 / 일반 웹)
     http_timeout: int = field(default_factory=lambda: _env_int("AMIGO_RAG_HTTP_TIMEOUT", 20))

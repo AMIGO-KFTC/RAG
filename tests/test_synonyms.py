@@ -65,3 +65,16 @@ def test_synonym_makes_different_word_relevant(tmp_path, sample_dir):
     # 사전을 고치면 다음 검색부터 바로 반영된다.
     kb1.synonyms.set_groups([])
     assert kb1.search(question, top_k=3)[0].relevance == before[0].relevance
+
+
+def test_default_dictionary_is_on_and_can_be_turned_off(monkeypatch):
+    from amigo_rag.config import DEFAULT_SYNONYMS_PATH
+
+    monkeypatch.delenv("AMIGO_RAG_SYNONYMS", raising=False)
+    assert RAGSettings().synonyms_path == DEFAULT_SYNONYMS_PATH
+    assert SynonymDict.load(DEFAULT_SYNONYMS_PATH).expand("월 대금 지급")  # 기본 사전이 실제로 들어 있다
+    for off in ("", "off", "OFF", "none"):
+        monkeypatch.setenv("AMIGO_RAG_SYNONYMS", off)
+        assert RAGSettings().synonyms_path is None
+    monkeypatch.setenv("AMIGO_RAG_SYNONYMS", "/tmp/my.json")
+    assert str(RAGSettings().synonyms_path) == "/tmp/my.json"
