@@ -464,6 +464,19 @@ if not hits:
 - 의미 검색 품질을 높이려면 `pip install -e ".[st]"` 후 `AMIGO_RAG_EMBEDDING=st:jhgan/ko-sroberta-multitask`(또는 `st:BAAI/bge-m3`).
   처음 한 번 모델을 내려받으므로 인터넷(또는 사내 모델 미러)이 필요하고, 임베딩 설정을 바꾸면 기존 지식베이스는 다시 적재해야 합니다(섞어 쓰면 오류로 알려 줍니다).
 
+### 동의어 사전
+
+단어 겹침으로 관련 여부를 판정하기 때문에 자료에는 '대금', 질문에는 '비용'처럼 말이 다르면 놓칩니다. 같은 뜻의 업무 용어를 묶어 두면 해결됩니다.
+
+```json
+{"groups": [["대금", "비용", "요금"], ["연락처", "전화번호", "내선"]]}
+```
+
+- `AMIGO_RAG_SYNONYMS=/경로/synonyms.json` 으로 켭니다. 비워 두면 기존과 같습니다.
+- 자료의 조각에 묶음 중 한 단어가 있으면 나머지 단어도 있는 것처럼 색인합니다. 파일을 고치면 자료를 다시 올리지 않아도 다음 검색부터 반영됩니다.
+- 코드로 편집할 때는 `kb.synonyms.add_group([...])`, `remove_term("...")`, `save()` 를 씁니다.
+- 샘플에서 `유지보수 비용 지급 요청` 질문의 관련도가 0.61 에서 1.0 으로 올랐습니다. 다만 에이전트 전체 평가(3회씩)에서는 효과가 실행 간 편차 안이라 확정하지 못했습니다.
+
 ### 임베딩 비교 (samples 6종, 질문 68개로 측정)
 
 `python evals/compare_embeddings.py hash st:jhgan/ko-sroberta-multitask st:BAAI/bge-m3` 로 다시 잴 수 있습니다.
@@ -489,6 +502,7 @@ BackEnd 와 함께 실행할 때는 `BackEnd/.env` 에 적습니다(저장 위�
 | `AMIGO_RAG_CHUNK_SIZE` / `AMIGO_RAG_CHUNK_OVERLAP` | `900` / `150` | 청크 크기(문자) |
 | `AMIGO_RAG_MAX_FILE_MB` | `50` | 파일 크기 제한 |
 | `AMIGO_RAG_MIN_RELEVANCE` | `0.4` | `only_relevant=True` 검색이 결과로 인정하는 최소 관련도(0~1). 높이면 "없음" 판정이 늘고 놓치는 답도 늘어납니다 |
+| `AMIGO_RAG_SYNONYMS` | (없음) | 동의어 사전 JSON 파일 경로. 설정하면 `대금`↔`비용` 처럼 다른 단어로 물어도 "관련 있음"으로 판정합니다([동의어 사전](#동의어-사전)) |
 | `CONFLUENCE_BASE_URL` | | 컨플루언스 주소(링크 유형 판별·컨텍스트 경로) |
 | `CONFLUENCE_PAT` | | Server/DC 개인 액세스 토큰 |
 | `CONFLUENCE_EMAIL`, `CONFLUENCE_API_TOKEN` | | Cloud 인증 |
