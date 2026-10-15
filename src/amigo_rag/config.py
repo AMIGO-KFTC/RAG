@@ -46,6 +46,8 @@ class RAGSettings:
     max_file_mb: int = field(default_factory=lambda: _env_int("AMIGO_RAG_MAX_FILE_MB", 50))
     # 검색 결과를 '질문과 관련 있음'으로 보는 기준(0~1). search(only_relevant=True) 가 이 값 미만인 결과를 뺀다.
     min_relevance: float = field(default_factory=lambda: _env_float("AMIGO_RAG_MIN_RELEVANCE", 0.4))
+    # 동의어 사전 JSON 파일 경로. 비워 두면 동의어를 쓰지 않는다(기본).
+    synonyms_path: Path | None = field(default_factory=lambda: Path(v) if (v := os.getenv("AMIGO_RAG_SYNONYMS", "")) else None)
 
     # 링크 수집 (컨플루언스 / 나누미 / 일반 웹)
     http_timeout: int = field(default_factory=lambda: _env_int("AMIGO_RAG_HTTP_TIMEOUT", 20))

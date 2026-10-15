@@ -23,11 +23,12 @@ from .embeddings import Embedder, get_embedder, tokenize
 from .models import Chunk, IngestResult, ParsedDocument, ParseError, SearchResult, SourceInfo
 from .parsers import parse_file
 from .parsers.text import text_to_blocks
+from .synonyms import SynonymDict
 from .retrieval import BM25Index, content_units, reciprocal_rank_fusion
 from .store import ChromaStore
 
 _VERSIONS: dict[tuple[str, str], int] = {}
-_BM25_CACHE: dict[tuple[str, str], tuple[tuple[int, int], BM25Index]] = {}
+_BM25_CACHE: dict[tuple[str, str], tuple[tuple, BM25Index]] = {}
 _CACHE_LOCK = threading.RLock()
 
 # 소스 목록에 노출할 메타데이터 키
@@ -45,6 +46,7 @@ class KnowledgeBase:
         self.embedder = embedder or get_embedder(self.settings.embedding)
         self.store = ChromaStore(self.settings.chroma_dir, self.embedder.name)
         self._cache_key = (str(self.settings.chroma_dir or ":memory:"), kb_id)
+        self.synonyms = SynonymDict.load(self.settings.synonyms_path)
 
     # ------------------------------------------------------------------ 적재(ingest)
     def add_file(
@@ -256,12 +258,13 @@ class KnowledgeBase:
             _VERSIONS[self._cache_key] = _VERSIONS.get(self._cache_key, 0) + 1
 
     def _bm25(self) -> BM25Index:
+        self.synonyms.refresh()
         with _CACHE_LOCK:
-            token = (_VERSIONS.get(self._cache_key, 0), self.store.count(self.kb_id))
+            token = (_VERSIONS.get(self._cache_key, 0), self.store.count(self.kb_id), self.synonyms.signature)
             cached = _BM25_CACHE.get(self._cache_key)
             if cached and cached[0] == token:
                 return cached[1]
-            index = BM25Index(self.store.get(self.kb_id))
+            index = BM25Index(self.store.get(self.kb_id), synonyms=self.synonyms)
             _BM25_CACHE[self._cache_key] = (token, index)
             return index
 

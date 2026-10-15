@@ -70,7 +70,7 @@ class _Doc:
 class BM25Index:
     """지식베이스 하나에 대한 메모리 BM25 색인(문서 수천 개 규모의 프로토타입용)."""
 
-    def __init__(self, rows: list[dict], k1: float = 1.4, b: float = 0.75) -> None:
+    def __init__(self, rows: list[dict], k1: float = 1.4, b: float = 0.75, synonyms=None) -> None:
         self.k1, self.b = k1, b
         self.docs: list[_Doc] = []
         df: Counter = Counter()
@@ -79,10 +79,13 @@ class BM25Index:
         for row in rows:
             meta = row.get("metadata") or {}
             context = " ".join(str(meta.get(k, "")) for k in ("file_name", "section", "subject", "title"))
-            tokens = Counter(tokenize(context + " " + (row.get("text") or "")))
+            body = context + " " + (row.get("text") or "")
+            if synonyms:  # 조각에 사전 단어가 있으면 그 동의어도 들어 있는 것처럼 색인한다.
+                body += " " + synonyms.expand(body)
+            tokens = Counter(tokenize(body))
             self.docs.append(_Doc(row["id"], row.get("text") or "", meta, tokens, sum(tokens.values())))
             df.update(tokens.keys())
-            units = content_units(context + " " + (row.get("text") or ""))
+            units = content_units(body)
             self._units[row["id"]] = units
             unit_df.update(units)
         n = max(len(self.docs), 1)
