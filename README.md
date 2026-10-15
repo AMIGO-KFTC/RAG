@@ -386,7 +386,7 @@ src/amigo_rag/
   config.py       환경변수 설정(RAGSettings)
   cli.py          명령줄 도구
 samples/          가상 인수인계 자료 6종과 생성 스크립트(make_samples.py)
-evals/            검색 품질 평가(retrieval_eval.py) — API 키 없이 몇 초 만에 실행
+evals/            검색 품질 평가(retrieval_eval.py)·임베딩 비교(compare_embeddings.py) — API 키 없이 실행
 tests/            형식별 파서 · 청킹 · 링크 수집 · 검색 테스트
 ```
 
@@ -463,6 +463,20 @@ if not hits:
   `python evals/retrieval_eval.py` 로 질문 34개(자료에 있음 24 / 없음 10)에 대한 성적을 볼 수 있고, `--sweep` 으로 기준값별 득실을 비교합니다.
 - 의미 검색 품질을 높이려면 `pip install -e ".[st]"` 후 `AMIGO_RAG_EMBEDDING=st:jhgan/ko-sroberta-multitask`(또는 `st:BAAI/bge-m3`).
   처음 한 번 모델을 내려받으므로 인터넷(또는 사내 모델 미러)이 필요하고, 임베딩 설정을 바꾸면 기존 지식베이스는 다시 적재해야 합니다(섞어 쓰면 오류로 알려 줍니다).
+
+### 임베딩 비교 (samples 6종, 질문 68개로 측정)
+
+`python evals/compare_embeddings.py hash st:jhgan/ko-sroberta-multitask st:BAAI/bge-m3` 로 다시 잴 수 있습니다.
+
+| 임베딩 | 정답을 1위로 찾음(hit@1) | 상위 3위 안(hit@3) | 모델 크기 |
+|---|---|---|---|
+| `hash` (기본) | 73.5% | 97.1% | 없음 |
+| `st:jhgan/ko-sroberta-multitask` | 80.9% | 97.1% | 약 450MB |
+| `st:BAAI/bge-m3` | 82.4% | 95.6% | 약 2GB |
+
+- 의미 모델은 **1위 정확도를 7~9%p 올립니다.** 다만 68문항 규모라 5~6문항 차이이고, 처음 보는 질문(test)만 보면 `ko-sroberta` 는 차이가 없고 `bge-m3` 만 5%p 높았습니다. `bge-m3` 는 `ko-sroberta` 보다 1.5%p 높을 뿐 모델이 4배 큽니다.
+- **"자료에 없음" 판정은 임베딩으로 좋아지지 않았습니다.** 벡터 유사도만으로 판정하면 정답이 있는 질문의 30~45%를 놓쳤습니다(유지 54~71%). 단어 겹침 방식(`relevant`)이 더 균형이 좋아 임베딩과 무관하게 그대로 씁니다.
+- 기본값은 `hash` 로 둡니다. 모델 다운로드·재적재·사내 모델 미러가 필요하고, 샘플이 작아 실제 자료로 다시 재어 봐야 하기 때문입니다. 순위 정확도를 높이고 싶은 조직은 `AMIGO_RAG_EMBEDDING` 만 바꾸면 됩니다.
 
 ## 환경변수
 

@@ -156,8 +156,10 @@ TEST_UNANSWERABLE: list[str] = [
 ]
 
 
-def build_kb() -> KnowledgeBase:
-    kb = KnowledgeBase(f"eval-{tempfile.mktemp(prefix='')[-8:]}", settings=RAGSettings.in_memory())
+def build_kb(embedding: str | None = None) -> KnowledgeBase:
+    """samples/ 6종을 메모리 지식베이스에 적재한다. embedding 은 'hash'(기본) 또는 'st:<모델명>'."""
+    overrides = {"embedding": embedding} if embedding else {}
+    kb = KnowledgeBase(f"eval-{tempfile.mktemp(prefix='')[-8:]}", settings=RAGSettings.in_memory(**overrides))
     for pattern in SAMPLE_FILES:
         for path in sorted(SAMPLES.glob(pattern)):
             kb.add_file(path)
@@ -230,9 +232,10 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("-v", "--verbose", action="store_true", help="질문별 상세 출력")
     parser.add_argument("--set", choices=tuple(SETS), default="dev", help="dev: 개발 중 맞춰 본 질문 / heldout: 검증용 / test: 최종 확인 전용(작업이 끝나기 전에는 실행하지 말 것)")
+    parser.add_argument("--embedding", default=None, help="임베딩 설정: hash(기본) 또는 st:<모델명>")
     parser.add_argument("--sweep", action="store_true", help="min_relevance 기준값을 바꿔 가며 득실을 비교")
     args = parser.parse_args()
-    kb = build_kb()
+    kb = build_kb(args.embedding)
     if args.sweep:
         print("min_relevance  있는 질문 유지(found)  없는 질문 걸러냄(rejected)")
         for threshold in (0.2, 0.3, 0.4, 0.5, 0.6, 0.7):
