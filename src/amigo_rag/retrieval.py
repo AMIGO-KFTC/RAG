@@ -7,10 +7,55 @@
 from __future__ import annotations
 
 import math
+import re
+import unicodedata
 from collections import Counter
 from dataclasses import dataclass
 
 from .embeddings import tokenize
+
+# ---- "이 조각이 질문과 정말 관련 있나"를 가늠하는 단위(content_units)
+# 질문 속 '인가요/하나요' 같은 어미·조사와 '어떻게/언제' 같은 의문사는 어떤 문서에나 있거나 없어서 판단에 도움이 안 되므로 뺀다.
+_UNIT_WORD = re.compile(r"[가-힣]+|[a-zA-Z][a-zA-Z0-9_]*|\d+")
+_HANGUL_ONLY = re.compile(r"^[가-힣]+$")
+_SUFFIXES = tuple(
+    sorted(
+        "인가요 입니까 이에요 입니다 하는지 한가요 되나요 있나요 했나요 하나요 나요 인가 했나 하나 받나 나면 "
+        "에게 에서는 에서 까지 부터 으로 에는 에도 이란 인지 이며".split(),
+        key=len,
+        reverse=True,
+    )
+)
+_ONE_CHAR_SUFFIXES = tuple("은는이가을를에의로도와과만")
+_QUESTION_WORDS = frozenset("어떻게 언제 누구 누가 얼마 어디 어디에 무엇 무슨 몇 어떤 방법 절차 알려줘 알려 주세요".split())
+_LIGHT_SYLLABLES = frozenset("하되있없안누")
+
+
+def _strip_suffix(word: str) -> str:
+    for suffix in _SUFFIXES:
+        if word.endswith(suffix) and len(word) > len(suffix):
+            return word[: -len(suffix)]
+    # 한 글자 조사는 남는 말이 두 글자 이상일 때만 뗀다('회의'가 '회'가 되는 것을 막는다)
+    if len(word) >= 3 and word[-1] in _ONE_CHAR_SUFFIXES:
+        return word[:-1]
+    return word
+
+
+def content_units(text: str) -> set[str]:
+    """관련도 판정용 단위: 영문/숫자 단어 + 한글 음절 2-gram(어미·조사·의문사 제거 후)."""
+    units: set[str] = set()
+    for word in _UNIT_WORD.findall(unicodedata.normalize("NFC", text or "").lower()):
+        if _HANGUL_ONLY.match(word):
+            word = _strip_suffix(word)
+            if not word or word in _QUESTION_WORDS or word in _LIGHT_SYLLABLES:
+                continue
+            if len(word) == 1:
+                units.add(word)
+            else:
+                units.update(word[i : i + 2] for i in range(len(word) - 1))
+        elif len(word) > 1 or word.isdigit():
+            units.add(word)
+    return units
 
 
 @dataclass
@@ -29,15 +74,36 @@ class BM25Index:
         self.k1, self.b = k1, b
         self.docs: list[_Doc] = []
         df: Counter = Counter()
+        self._units: dict[str, set[str]] = {}
+        unit_df: Counter = Counter()
         for row in rows:
             meta = row.get("metadata") or {}
             context = " ".join(str(meta.get(k, "")) for k in ("file_name", "section", "subject", "title"))
             tokens = Counter(tokenize(context + " " + (row.get("text") or "")))
             self.docs.append(_Doc(row["id"], row.get("text") or "", meta, tokens, sum(tokens.values())))
             df.update(tokens.keys())
+            units = content_units(context + " " + (row.get("text") or ""))
+            self._units[row["id"]] = units
+            unit_df.update(units)
         n = max(len(self.docs), 1)
+        # 드문 단어일수록 큰 비중. 지식베이스 어디에도 없는 단어(df=0)가 가장 크다.
+        self._unit_df = unit_df
+        self._unit_n = n
         self.avgdl = sum(d.length for d in self.docs) / n if self.docs else 0.0
         self.idf = {t: math.log(1 + (n - f + 0.5) / (f + 0.5)) for t, f in df.items()}
+
+    def relevance(self, query_units: set[str], doc_id: str) -> float:
+        """질문의 핵심 단위 중 이 조각이 가진 것의 비중(0~1, 드문 단위일수록 가중). 질문에 쓸 단위가 없으면 0."""
+        if not query_units:
+            return 0.0
+        have = self._units.get(doc_id, set())
+        total = matched = 0.0
+        for unit in query_units:
+            weight = math.log(1 + self._unit_n / (self._unit_df.get(unit, 0) + 0.5))
+            total += weight
+            if unit in have:
+                matched += weight
+        return matched / total if total else 0.0
 
     def search(self, query: str, top_k: int, where: dict | None = None) -> list[tuple[_Doc, float]]:
         q_tokens = [t for t in set(tokenize(query)) if t in self.idf]

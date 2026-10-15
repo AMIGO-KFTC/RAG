@@ -23,7 +23,7 @@ from .embeddings import Embedder, get_embedder, tokenize
 from .models import Chunk, IngestResult, ParsedDocument, ParseError, SearchResult, SourceInfo
 from .parsers import parse_file
 from .parsers.text import text_to_blocks
-from .retrieval import BM25Index, reciprocal_rank_fusion
+from .retrieval import BM25Index, content_units, reciprocal_rank_fusion
 from .store import ChromaStore
 
 _VERSIONS: dict[tuple[str, str], int] = {}
@@ -146,8 +146,13 @@ class KnowledgeBase:
         source_ids: list[str] | None = None,
         where: dict[str, Any] | None = None,
         per_source_limit: int | None = None,
+        only_relevant: bool = False,
     ) -> list[SearchResult]:
-        """하이브리드(벡터 + BM25) 검색. 결과는 관련도 순이며 각 결과에 출처 메타데이터가 붙는다."""
+        """하이브리드(벡터 + BM25) 검색. 결과는 관련도 순이며 각 결과에 출처 메타데이터가 붙는다.
+
+        각 결과의 relevance/relevant 는 질문의 핵심 단어가 그 조각에 들어 있는 정도다. only_relevant=True 이면
+        기준(settings.min_relevance) 미만 결과를 빼므로, 빈 목록은 '자료에 답이 없음'을 뜻한다.
+        """
         query = (query or "").strip()
         if not query or top_k <= 0:
             return []
@@ -156,7 +161,9 @@ class KnowledgeBase:
         query_vec = self.embedder.embed_query(query)
 
         vector_rows = self.store.query(self.kb_id, query_vec, pool, where)
-        keyword_hits = self._bm25().search(query, pool, where)
+        bm25 = self._bm25()
+        keyword_hits = bm25.search(query, pool, where)
+        query_units = content_units(query)
         fused = reciprocal_rank_fusion(
             [[r["id"] for r in vector_rows], [d.id for d, _ in keyword_hits]],
             weights=[1.0, 1.0],
@@ -175,6 +182,10 @@ class KnowledgeBase:
         per_source: dict[str, int] = {}
         for cid, _fused in ranked:
             row = rows[cid]
+            relevance = bm25.relevance(query_units, cid)
+            relevant = relevance >= self.settings.min_relevance
+            if only_relevant and not relevant:
+                continue
             sid = str(row["metadata"].get("source_id", ""))
             if per_source_limit and per_source.get(sid, 0) >= per_source_limit:
                 continue
@@ -189,6 +200,8 @@ class KnowledgeBase:
                     metadata=row["metadata"],
                     vector_score=round(similarity, 4),
                     keyword_score=round(coverage, 4),
+                    relevance=round(relevance, 4),
+                    relevant=relevant,
                 )
             )
             if len(results) >= top_k:

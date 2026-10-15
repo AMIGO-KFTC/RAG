@@ -386,6 +386,7 @@ src/amigo_rag/
   config.py       환경변수 설정(RAGSettings)
   cli.py          명령줄 도구
 samples/          가상 인수인계 자료 6종과 생성 스크립트(make_samples.py)
+evals/            검색 품질 평가(retrieval_eval.py) — API 키 없이 몇 초 만에 실행
 tests/            형식별 파서 · 청킹 · 링크 수집 · 검색 테스트
 ```
 
@@ -410,7 +411,17 @@ r.metadata    # 출처 메타데이터(아래 표)
 search_documents("홈페이지 담당자", kb_id="session-123", top_k=5)
 ```
 
-검색 옵션: `source_types=["pdf","eml"]`, `source_ids=[...]`, `where={...}`(Chroma 문법), `per_source_limit=2`(자료별 최대 결과 수).
+검색 옵션: `source_types=["pdf","eml"]`, `source_ids=[...]`, `where={...}`(Chroma 문법), `per_source_limit=2`(자료별 최대 결과 수),
+`only_relevant=True`(질문과 관련 없는 결과를 뺌 — **빈 목록이면 자료에 답이 없다는 뜻**).
+
+```python
+hits = kb.search("퇴사자 계정 회수 절차", only_relevant=True)
+if not hits:
+    ...  # 자료에 없음 → 사용자에게 물어본다
+```
+
+각 결과의 `relevance`(0~1)는 질문의 핵심 단어가 그 조각에 들어 있는 정도(드문 단어일수록 비중이 큼)이고, `relevant`는 기준 이상인지입니다.
+`score` 는 순위 참고용이라 "답이 있는지" 판단에는 쓰지 마세요(없는 내용을 물어도 높게 나올 수 있습니다).
 관리: `list_sources()`, `delete_source(source_id)`, `get_chunks(source_id)`, `stats()`, `clear()`.
 
 ## 지원 형식
@@ -447,6 +458,9 @@ search_documents("홈페이지 담당자", kb_id="session-123", top_k=5)
 
 - **오프라인 기본 임베딩**: 한글 음절 2/3-gram + 단어 해싱(1024차원). 모델 다운로드가 필요 없어 사내망에서도 바로 동작합니다.
 - **하이브리드 검색**: ChromaDB 벡터 검색 + BM25(한글 2-gram 토큰) → RRF 로 순위 융합. 사람 이름·시스템명 같은 고유명사에 강합니다.
+- **관련성 판정**: 질문에서 어미·조사·의문사(`인가요`, `어떻게` …)를 떼고 남은 핵심 단어 중 해당 조각에 있는 비중(IDF 가중)을 `relevance` 로 계산합니다.
+  한계: 단어가 겹치는지만 보므로 동의어(연락처↔전화번호)나 자료에 없는 약어(ERP·CRM)는 가려내지 못합니다. 의미 임베딩(아래)으로 보완하세요.
+  `python evals/retrieval_eval.py` 로 질문 34개(자료에 있음 24 / 없음 10)에 대한 성적을 볼 수 있고, `--sweep` 으로 기준값별 득실을 비교합니다.
 - 의미 검색 품질을 높이려면 `pip install -e ".[st]"` 후 `AMIGO_RAG_EMBEDDING=st:jhgan/ko-sroberta-multitask`(또는 `st:BAAI/bge-m3`).
   처음 한 번 모델을 내려받으므로 인터넷(또는 사내 모델 미러)이 필요하고, 임베딩 설정을 바꾸면 기존 지식베이스는 다시 적재해야 합니다(섞어 쓰면 오류로 알려 줍니다).
 
@@ -460,6 +474,7 @@ BackEnd 와 함께 실행할 때는 `BackEnd/.env` 에 적습니다(저장 위�
 | `AMIGO_RAG_EMBEDDING` | `hash` | `hash` 또는 `st:<모델명>` |
 | `AMIGO_RAG_CHUNK_SIZE` / `AMIGO_RAG_CHUNK_OVERLAP` | `900` / `150` | 청크 크기(문자) |
 | `AMIGO_RAG_MAX_FILE_MB` | `50` | 파일 크기 제한 |
+| `AMIGO_RAG_MIN_RELEVANCE` | `0.4` | `only_relevant=True` 검색이 결과로 인정하는 최소 관련도(0~1). 높이면 "없음" 판정이 늘고 놓치는 답도 늘어납니다 |
 | `CONFLUENCE_BASE_URL` | | 컨플루언스 주소(링크 유형 판별·컨텍스트 경로) |
 | `CONFLUENCE_PAT` | | Server/DC 개인 액세스 토큰 |
 | `CONFLUENCE_EMAIL`, `CONFLUENCE_API_TOKEN` | | Cloud 인증 |
