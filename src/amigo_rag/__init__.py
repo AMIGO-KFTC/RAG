@@ -14,7 +14,7 @@ from .config import RAGSettings
 from .connectors import detect_link_type, fetch_url
 from .kb import KnowledgeBase, get_knowledge_base, ingest_file, ingest_url, search_documents
 from .models import Block, Chunk, IngestResult, ParsedDocument, ParseError, SearchResult, SourceInfo, format_citation
-from .parsers import FORMAT_LABELS, parse_file, supported_extensions
+from .parsers import FORMAT_LABELS, parse_file, set_image_reader, supported_extensions
 
 __version__ = "0.1.0"
 
@@ -37,5 +37,6 @@ __all__ = [
     "ingest_url",
     "parse_file",
     "search_documents",
+    "set_image_reader",
     "supported_extensions",
 ]
