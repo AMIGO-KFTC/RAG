@@ -11,6 +11,7 @@ from collections.abc import Callable
 from ..models import ParsedDocument, ParseError
 from .archive import parse_zip
 from .html import html_to_blocks, parse_html_file
+from .image import IMAGE_MEDIA_TYPES, parse_image, set_image_reader
 from .hwp import parse_hwp
 from .hwpx import parse_hwpx
 from .mail import parse_eml, parse_msg
@@ -34,6 +35,7 @@ PARSERS: dict[str, Parser] = {
     ".htm": parse_html_file,
     ".zip": parse_zip,
 }
+PARSERS.update({ext: parse_image for ext in IMAGE_MEDIA_TYPES})
 PARSERS.update({ext: parse_text for ext in TEXT_EXTENSIONS})
 PARSERS.update({ext: parse_csv for ext in CSV_EXTENSIONS})
 PARSERS.update({ext: parse_code for ext in CODE_LANGUAGES})
@@ -42,7 +44,7 @@ _NESTED = {parse_zip, parse_eml, parse_msg}
 
 FORMAT_LABELS = {
     "pdf": "PDF", "hwpx": "한글(HWPX)", "hwp": "한글(HWP)", "docx": "Word", "pptx": "PowerPoint",
-    "xlsx": "Excel", "eml": "메일", "msg": "메일", "html": "HTML", "zip": "압축파일", "text": "텍스트",
+    "xlsx": "Excel", "eml": "메일", "msg": "메일", "html": "HTML", "zip": "압축파일", "image": "이미지", "text": "텍스트",
     "markdown": "마크다운", "csv": "CSV", "code": "소스코드",
 }
 
