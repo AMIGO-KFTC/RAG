@@ -119,7 +119,7 @@ def parse_pdf(path: Path) -> ParsedDocument:
     except Exception as exc:  # pdfminer 는 손상 파일에서 다양한 예외를 던진다
         message = str(exc).lower()
         if "password" in message or "encrypt" in message:
-            raise ParseError("암호가 설정된 PDF 는 읽을 수 없습니다. 암호를 해제한 뒤 다시 올려 주세요.") from exc
+            raise ParseError("암호가 설정된 PDF 는 읽을 수 없습니다.\n암호를 해제한 뒤 다시 올려 주세요.") from exc
         raise ParseError(f"PDF 를 읽지 못했습니다: {exc}") from exc
     finally:
         if pdfium_doc is not None:

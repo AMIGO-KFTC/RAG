@@ -27,10 +27,10 @@ def set_image_reader(reader: ImageReader | None) -> None:
 
 def parse_image(path: Path) -> ParsedDocument:
     if _reader is None:
-        raise ParseError("이미지 속 글자를 읽을 수 없어요(Claude 연결이 필요해요). 글자가 있는 PDF나 문서로 올려 주세요.")
+        raise ParseError("이미지 속 글자를 읽을 수 없어요(Claude 연결이 필요해요).\n글자가 있는 PDF나 문서로 올려 주세요.")
     data = path.read_bytes()
     if len(data) > MAX_IMAGE_BYTES:
-        raise ParseError(f"이미지가 너무 커요(최대 {MAX_IMAGE_BYTES // 1024 // 1024}MB). 크기를 줄여서 올려 주세요.")
+        raise ParseError(f"이미지가 너무 커요(최대 {MAX_IMAGE_BYTES // 1024 // 1024}MB).\n크기를 줄여서 올려 주세요.")
     try:
         text = _reader(data, IMAGE_MEDIA_TYPES.get(path.suffix.lower(), "image/png"))
     except ParseError:

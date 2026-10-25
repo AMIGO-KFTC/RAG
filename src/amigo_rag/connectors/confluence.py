@@ -120,7 +120,7 @@ def fetch_confluence(url: str, settings: RAGSettings, client: httpx.Client) -> P
 def _get_json(client: httpx.Client, url: str, headers: dict) -> dict:
     resp, body = download(client, url, headers=headers)
     if "json" not in resp.headers.get("content-type", ""):
-        raise ParseError("컨플루언스 API 응답이 JSON 이 아닙니다(로그인 페이지로 이동했을 수 있음). 인증 설정을 확인해 주세요.")
+        raise ParseError("컨플루언스 API 응답이 JSON 이 아닙니다(로그인 페이지로 이동했을 수 있음).\n인증 설정을 확인해 주세요.")
     try:
         return json.loads(body)
     except ValueError as exc:
