@@ -70,7 +70,7 @@ def download(client: httpx.Client, url: str, *, headers: dict | None = None, lim
     try:
         with client.stream("GET", url, headers=headers or {}) as resp:
             if resp.status_code in (401, 403):
-                raise ParseError("접근 권한이 없습니다(로그인/권한 필요). 페이지를 PDF 나 HTML 로 저장해 파일로 올려 주세요.")
+                raise ParseError("접근 권한이 없습니다(로그인/권한 필요).\n페이지를 PDF 나 HTML 로 저장해 파일로 올려 주세요.")
             if resp.status_code == 404:
                 raise ParseError("페이지를 찾을 수 없습니다(404). 링크를 확인해 주세요.")
             if resp.status_code >= 400:
@@ -98,7 +98,7 @@ def fetch_page(
     resp, body = download(client, url, headers=headers)
     final_url = str(resp.url)
     if _looks_like_login(final_url, url):
-        raise ParseError("로그인 페이지로 이동했습니다. 인증 정보 설정이 필요하거나, 페이지를 파일로 저장해 올려 주세요.")
+        raise ParseError("로그인 페이지로 이동했습니다.\n인증 정보 설정이 필요하거나, 페이지를 파일로 저장해 올려 주세요.")
     content_type = resp.headers.get("content-type", "").lower()
     path_name = Path(unquote(urlparse(final_url).path)).name
 

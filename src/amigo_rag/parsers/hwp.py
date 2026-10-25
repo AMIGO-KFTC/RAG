@@ -26,19 +26,19 @@ def parse_hwp(path: Path) -> ParsedDocument:
     import olefile
 
     if not olefile.isOleFile(str(path)):
-        raise ParseError("HWP 파일 형식이 아닙니다. (HWPX 문서라면 확장자를 .hwpx 로 바꿔 주세요)")
+        raise ParseError("HWP 파일 형식이 아닙니다.\n(HWPX 문서라면 확장자를 .hwpx 로 바꿔 주세요)")
 
     doc = ParsedDocument(source_name=path.name, source_type="hwp")
     with olefile.OleFileIO(str(path)) as ole:
         if not ole.exists("FileHeader"):
-            raise ParseError("HWP FileHeader 가 없습니다. 손상된 파일일 수 있습니다.")
+            raise ParseError("HWP FileHeader 가 없습니다.\n손상된 파일일 수 있습니다.")
         header = ole.openstream("FileHeader").read()
         if not header.startswith(b"HWP Document File"):
-            raise ParseError("HWP 5.0 문서가 아닙니다. (HWP 3.0 이하 문서는 지원하지 않습니다)")
+            raise ParseError("HWP 5.0 문서가 아닙니다.\n(HWP 3.0 이하 문서는 지원하지 않습니다)")
         flags = struct.unpack_from("<I", header, 36)[0] if len(header) >= 40 else 0
         compressed = bool(flags & 0x1)
         if flags & 0x2:
-            raise ParseError("암호가 설정된 HWP 문서는 읽을 수 없습니다. 암호를 해제한 뒤 다시 올려 주세요.")
+            raise ParseError("암호가 설정된 HWP 문서는 읽을 수 없습니다.\n암호를 해제한 뒤 다시 올려 주세요.")
         distribution = bool(flags & 0x4)
 
         summary = _summary_info(ole)

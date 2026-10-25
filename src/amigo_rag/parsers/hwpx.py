@@ -37,7 +37,7 @@ def parse_hwpx(path: Path) -> ParsedDocument:
     try:
         zf = zipfile.ZipFile(path)
     except zipfile.BadZipFile as exc:
-        raise ParseError("HWPX 파일이 손상되었거나 HWPX 형식이 아닙니다. (구버전 .hwp 라면 확장자를 확인해 주세요)") from exc
+        raise ParseError("HWPX 파일이 손상되었거나 HWPX 형식이 아닙니다.\n(구버전 .hwp 라면 확장자를 확인해 주세요)") from exc
 
     with zf:
         names = set(zf.namelist())
