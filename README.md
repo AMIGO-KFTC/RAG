@@ -149,7 +149,7 @@ cd ..\FrontEnd; npm install
 |---|---|
 | API 키 없이 시연 (기본) | 그대로 두기 → 규칙 기반 오프라인 엔진 |
 | Claude 로 실제 분석 | `ANTHROPIC_API_KEY=sk-ant-...` |
-| 모델 바꾸기 | `AMIGO_LLM_MODEL=claude-sonnet-5-5`(기본) / `claude-haiku-4-5`(가장 저렴, 약 절반) / `claude-opus-5-5`(약 2배, 품질 가장 좋음) |
+| 모델 바꾸기 | `AMIGO_LLM_MODEL=claude-opus-5-5`(기본, 품질 가장 좋음) / `claude-sonnet-5-5`(약 절반) / `claude-haiku-4-5`(가장 저렴하지만 이름·숫자를 자주 틀림) |
 | 키가 있어도 오프라인 엔진으로 | `AMIGO_LLM_MODE=offline` |
 | Claude API 비용 상한 두기 | `AMIGO_LLM_BUDGET_USD=10` (모든 작업 합계가 $10 를 넘으면 새 AI 작업을 막음, 0 이면 제한 없음) |
 | 컨플루언스 링크 수집 | `CONFLUENCE_BASE_URL` + `CONFLUENCE_PAT`(Server/DC), Cloud 는 `CONFLUENCE_EMAIL` + `CONFLUENCE_API_TOKEN` |
